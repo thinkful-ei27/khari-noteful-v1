@@ -21,7 +21,17 @@ app.listen(8080, function () {
 });
 
 app.get('/api/notes', (req, res) => {
-  res.json(data);
+  const searchTerm = req.query.searchTerm;
+  console.log(data);
+  if (searchTerm !== ''){
+    const result = data.filter(item => {if(
+      item.title.includes(searchTerm) || item.content.includes(searchTerm)) 
+    {return item;}
+    });
+
+    console.log(result);
+    res.json(result);}
+  else res.json(data);
 });
 
 
