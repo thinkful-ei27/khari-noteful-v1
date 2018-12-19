@@ -1,0 +1,76 @@
+if(req.query.token === 'lasdfsaf){
+    next(); //or "move on with the request"
+} else{
+    //stop the request and/or send an error
+}
+
+const express = require('express');
+
+const app = express();
+
+app.get('/foo', (req, res, next) =>{
+    if(req.query.token === 'abcde'){            //if the token is an expected format and processable
+        next();                                 //then proceed or return response etc
+    } else {                                                                
+        const err = new Error('Token not valid');       //else we go find a handler with 4 arguments   *arguments.length*
+        err.status = 401;
+        next(err);
+    }
+});
+
+app.use((req, res) =>{
+    res.send('ok');
+})
+
+app.use((err, req, res, next) =>{           //4 arguments signals an error handling middleware
+    res.status(whatever.status).send(whatever.message);
+});
+
+app.listen(8080, () => console.log('server on 8080'));
+
+
+/////////////////Mentor session
+
+const server = http.createServer((req, res)=>{
+    if(req.url === '/'){
+        res.write('hello');
+        res.end();
+    } else if(req.url === '/posts'){
+        res.write('Now we are in the post')
+        res.end();
+    }
+});
+
+server.listen(8080);
+
+basest server
+_______________________________________________________________________________ //now with express
+package.json blueprint iincludes
+    dependencies, version, etc
+
+
+const app = express();
+app.use(morgan('combined'));
+
+
+
+app.get('/posts', (req, res)=>{
+    res.send(['post1, post1, post3'])
+})
+
+
+
+
+__________________________________________________________________________________
+const logger =(req, res, next) =>{          //all middleware uses a |next| callback
+    const now = new Date();
+    console.log(logs);
+    next();                                        //ask about next() during use
+}
+
+
+
+
+questions:
+    could I pass a json body into a PUT request via the console command?
+        remember that via params is a very old way

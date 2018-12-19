@@ -22,31 +22,58 @@ const app = express();
 // ADD STATIC SERVER HERE
 app.use(express.static('public'));
 app.use(handleLogger);
+app.use(express.json());
 
 
 
-app.get('/api/notes', (req, res) => {
-  const searchTerm = req.query.searchTerm;
-  console.log(searchTerm);
-  if (searchTerm)
-  {
-    const result = data.filter(item => {
-      return item.title.includes(searchTerm);
-    });
-    //console.log(result);
-    res.json(result);
-  }
-  else res.json(data);
-});
-
-app.get('/api/notes/:id', (req, res)=>{
-  const id = req.params.id;
-  //console.log('fishing');
-  let result = data.find(item =>{
-    return item.id === Number(id);
+app.get('/api/notes', (req, res, next) => {
+  const { searchTerm } = req.query;
+  
+  notes.filter(searchTerm, (err, list) => {
+    if (err) {
+      return next(err); // goes to error handler
+    }
+    res.json(list); // responds with filtered array
   });
-  res.json(result);
 });
+
+app.get('/api/notes/:id', (req, res, next)=>{
+  const id  = req.params.id;
+
+  notes.find(Number(id), (err, item)=> {
+    if(err){
+      return next(err);
+    }
+    res.json(item);
+  });
+});
+
+app.put('/api/notes/:id', (req, res, next) => {
+  const id = req.params.id;
+  
+  /***** Never trust users - validate input *****/
+  const updateObj = {};
+  const updateFields = ['title', 'content'];
+  
+  updateFields.forEach(field => {
+    if (field in req.body) {
+      updateObj[field] = req.body[field];
+    }
+  });
+  
+  notes.update(id, updateObj, (err, item) => {
+    if (err) {
+      return next(err);
+    }
+    if (item) {
+      res.json(item);
+    } else {
+      next();
+    }
+  });
+});
+
+
 
 app.get('/boom', (req, res, next) => {
   throw new Error('Boom!!');
@@ -65,6 +92,8 @@ app.use(function (err, req, res, next) {
     error: err
   });
 });
+
+
 
 
 app.listen(PORT, function () {
