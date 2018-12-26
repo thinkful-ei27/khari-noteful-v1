@@ -11,7 +11,7 @@ const simDB = require('../db/simDB');
 const notes = simDB.initialize(data);
 
 // Get All (and search by query)
-router.get('/notes', (req, res, next) => {
+router.get('/', (req, res, next) => {
   const { searchTerm } = req.query;
 
   notes.filter(searchTerm)
