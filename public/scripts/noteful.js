@@ -51,11 +51,10 @@ const noteful = (function () {
 
       const noteId = getNoteIdFromElement(event.currentTarget);
 
-      api.details(noteId)
-        .then(detailsResponse => {
-          store.currentNote = detailsResponse;
-          render();
-        });
+      api.details(noteId, detailsResponse => {
+        store.currentNote = detailsResponse;
+        render();
+      });
 
     });
   }
@@ -67,7 +66,10 @@ const noteful = (function () {
       const searchTerm = $('.js-note-search-entry').val();
       store.currentSearchTerm = searchTerm ? { searchTerm } : {};
 
-      doSearchAndRender();
+      api.search(store.currentSearchTerm, searchResponse => {
+        store.notes = searchResponse;
+        render();
+      });
 
     });
   }
@@ -77,32 +79,18 @@ const noteful = (function () {
       event.preventDefault();
 
       const editForm = $(event.currentTarget);
-
-      const noteObj = {
-        id: store.currentNote.id,
+      const noteObj ={
         title: editForm.find('.js-note-title-entry').val(),
         content: editForm.find('.js-note-content-entry').val()
       };
 
-      if (noteObj.id) {
+      noteObj.id = store.currentNote.id;
 
-        // Promisified Solution
-        api.update(store.currentNote.id, noteObj)
-          .then(updateResponse => {
-            store.currentNote = updateResponse;
-          })
-          .then(doSearchAndRender);
+      api.update(noteObj.id, noteObj, updateResponse =>{
+        store.currentNote = updateResponse;
 
-      } else {
-
-        // Promisified Solution
-        api.create(noteObj)
-          .then(createResponse => {
-            store.currentNote = createResponse;
-          })
-          .then(doSearchAndRender);
-      }
-
+        render();
+      });
     });
   }
 
@@ -122,13 +110,17 @@ const noteful = (function () {
 
       const noteId = getNoteIdFromElement(event.currentTarget);
 
-      api.remove(noteId)
-        .then(() => {
-          if (noteId === store.currentNote.id) {
+      api.remove(noteId, () => {
+
+        api.search(store.currentSearchTerm, searchResponse =>{
+          store.notes = searchResponse;
+          if(noteId === store.currentNote.id){
             store.currentNote = {};
           }
-        })
-        .then(doSearchAndRender);
+          render();
+        });
+      });
+      
     });
   }
 
