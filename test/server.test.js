@@ -1,247 +1,153 @@
 'use strict';
 
-const app = require('../server');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
 const expect = chai.expect;
+const chaiHttp = require('chai-http');
+
+
+
+const app = require('../server');
+
 
 chai.use(chaiHttp);
 
-describe('Reality check', function () {
-
-  it('true should be true', function () {
+describe('Reality check', function(){
+    
+  it('true should be true', function(){
     expect(true).to.be.true;
   });
 
-  it('2 + 2 should equal 4', function () {
-    expect(2 + 2).to.equal(4);
+  it('2+2 should equal 4', function(){
+    expect(2+2).to.equal(4);
   });
-
 });
 
-describe('Noteful App', function () {
 
-  let server;
-  before(function () {
-    return app.startServer()
-      .then(instance => server = instance);
+describe('Express static', function(){
+
+
+
+  it('GET request "/" should return the index page', function() {
+    return chai
+      .request(app)
+      .get('/')
+      .then(res => {
+        expect(res).to.exist;
+        expect(res).to.have.status(200);
+        expect(res).to.be.html;
+
+      });
   });
 
-  after(function () {
-    return server.stopServer();
-  });
+  it('GET notes should return an array of 10 notes as an array', function(){
+    return chai
+      .request(app)
+      .get('/api/notes')
+      .then(res => {
+        console.log(res.body);
+        expect(res).to.exist;
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.a('array');
+      
+        expect(res.body.length).to.be.at.least(10);
 
-  describe('Static server', function () {
-
-    it('GET request "/" should return the index page', function () {
-      return chai.request(server)
-        .get('/')
-        .then(function (res) {
-          expect(res).to.exist;
-          expect(res).to.have.status(200);
-          expect(res).to.be.html;
+        const expectedKeys= ['id', 'title','content'];
+        res.body.forEach(item =>{
+          expect(item).to.be.a('object');
+          expect(item).to.include.keys(expectedKeys);
         });
-    });
-
+      });
   });
 
-  describe('404 handler', function () {
-
-    it('should respond with 404 when given a bad path', function () {
-      return chai.request(server)
-        .get('/bad/path')
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(404);
-        });
-    });
-
+  it('GET request by id should get the note with specified ID', function(){
+    const id = 1005;
+    return chai
+      .request(app)
+      .get(`/api/notes/${id}`)
+      .then(res =>{
+        expect(res).to.exist;
+        expect(res).to.have.status(200);
+        expect(res.body).to.be.a('object');
+      });
   });
 
-  describe('GET /api/notes', function () {
+  it('should add a note on POST', function(){
+    const newItem = {
+      id: 9000,
+      title: 'Some new title',
+      content: 'With some new content'
+    };
+    return chai
+      .request(app)
+      .post('/api/notes')
+      .send(newItem)
+      .then(res =>{
+        expect(res).to.have.status(201);
+        expect(res).to.be.json;
+        expect(res.body).to.be.a('object');
+        expect(res.body).to.include.keys('id', 'title','content');
+        expect(res.body.id).to.not.equal(null);
 
-    it('should return the default of 10 Notes ', function () {
-      return chai.request(server)
+        expect(res.body).to.deep.equal(
+          Object.assign(newItem, {id: res.body.id})
+        );
+      });
+  });
+
+  it('Should return newly modified item with PUT or 404 for valid id', function(){
+    const updateData = {
+      id: 1005,
+      title: 'some new content',
+      content: 'and then some new content'
+    };
+    return (
+      chai
+        .request(app)
         .get('/api/notes')
-        .then(function (res) {
+        .then(res =>{
+          updateData.id = res.body[0].id;
+
+          return chai
+            .request(app)
+            .put(`/api/notes/${updateData.id}`)
+            .send(updateData);
+
+        })
+        .then(res=>{
           expect(res).to.have.status(200);
           expect(res).to.be.json;
-          expect(res.body).to.be.a('array');
-          expect(res.body).to.have.length(10);
-        });
-    });
+          expect(res.body).to.be.a('object');
+          expect(res.body).to.deep.equal(updateData);
+        })
+    );
+  });
 
-    it('should return a list with the correct right fields', function () {
-      return chai.request(server)
+  it('should remove recipe on delete', function(){
+    return(
+      chai
+        .request(app)
         .get('/api/notes')
-        .then(function (res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('array');
-          expect(res.body).to.have.length(10);
-          res.body.forEach(function (item) {
-            expect(item).to.be.a('object');
-            expect(item).to.include.keys('id', 'title', 'content');
-          });
-        });
-    });
-
-    it('should return correct search results for a valid query', function () {
-      return chai.request(server)
-        .get('/api/notes?searchTerm=about%20cats')
-        .then(function (res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('array');
-          expect(res.body).to.have.length(4);
-          expect(res.body[0]).to.be.an('object');
-        });
-    });
-
-    it('should return an empty array for an incorrect query', function () {
-      return chai.request(server)
-        .get('/api/notes?searchTerm=Not%20a%20Valid%20Search')
-        .then(function (res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('array');
-          expect(res.body).to.have.length(0);
-        });
-    });
-
-  });
-
-  describe('GET /api/notes/:id', function () {
-
-    it('should return correct notes', function () {
-      return chai.request(server)
-        .get('/api/notes/1000')
-        .then(function (res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body).to.be.an('object');
-          expect(res.body).to.include.keys('id', 'title', 'content');
-          expect(res.body.id).to.equal(1000);
-          expect(res.body.title).to.equal('5 life lessons learned from cats');
-        });
-    });
-
-    it('should respond with a 404 for an invalid id', function () {
-      return chai.request(server)
-        .get('/api/notes/DOESNOTEXIST')
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(404);
-        });
-    });
-
-  });
-
-  describe('POST /api/notes', function () {
-
-    it('should create and return a new item when provided valid data', function () {
-      const newItem = {
-        'title': 'The best article about cats ever!',
-        'content': 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor...'
-      };
-      return chai.request(server)
-        .post('/api/notes')
-        .send(newItem)
-        .then(function (res) {
-          expect(res).to.have.status(201);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('object');
-          expect(res.body).to.include.keys('id', 'title', 'content');
-
-          expect(res.body.id).to.equal(1010);
-          expect(res.body.title).to.equal(newItem.title);
-          expect(res.body.content).to.equal(newItem.content);
-          expect(res).to.have.header('location');
-        });
-    });
-
-    it('should return an error when missing "title" field', function () {
-      const newItem = {
-        'foo': 'bar'
-      };
-      return chai.request(server)
-        .post('/api/notes')
-        .send(newItem)
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(400);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('object');
-          expect(res.body.message).to.equal('Missing `title` in request body');
-        });
-    });
-
-  });
-
-  describe('PUT /api/notes/:id', function () {
-
-    it('should update the note', function () {
-      const updateItem = {
-        'title': 'What about dogs?!',
-        'content': 'woof woof'
-      };
-      return chai.request(server)
-        .put('/api/notes/1005')
-        .send(updateItem)
-        .then(function (res) {
-          expect(res).to.have.status(200);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('object');
-          expect(res.body).to.include.keys('id', 'title', 'content');
-
-          expect(res.body.id).to.equal(1005);
-          expect(res.body.title).to.equal(updateItem.title);
-          expect(res.body.content).to.equal(updateItem.content);
-        });
-    });
-
-    it('should respond with a 404 for an invalid id', function () {
-      const updateItem = {
-        'title': 'What about dogs?!',
-        'content': 'woof woof'
-      };
-      return chai.request(server)
-        .put('/api/notes/DOESNOTEXIST')
-        .send(updateItem)
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(404);
-        });
-    });
-
-    it('should return an error when missing "title" field', function () {
-      const updateItem = {
-        'foo': 'bar'
-      };
-      return chai.request(server)
-        .put('/api/notes/1005')
-        .send(updateItem)
-        .catch(err => err.response)
-        .then(res => {
-          expect(res).to.have.status(400);
-          expect(res).to.be.json;
-          expect(res.body).to.be.a('object');
-          expect(res.body.message).to.equal('Missing `title` in request body');
-        });
-    });
-
-  });
-
-  describe('DELETE  /api/notes/:id', function () {
-
-    it('should delete an item by id', function () {
-      return chai.request(server)
-        .delete('/api/notes/1005')
-        .then(function (res) {
+        .then(res =>{
+          return chai
+            .request(app)
+            .delete(`/api/notes/${res.body[0].id}`);
+        })
+        .then(res =>{
           expect(res).to.have.status(204);
-        });
-    });
-
+        })
+    );
   });
+});
+
+
+describe('404 handler', function () {
+  it('should respond with 404 when given a bad path', function () {
+    return chai.request(app)
+      .get('/DOES/NOT/EXIST')
+      .then(res => {
+        expect(res).to.have.status(404);
+      });
+  });
+
 
 });

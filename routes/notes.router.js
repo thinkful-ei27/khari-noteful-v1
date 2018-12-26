@@ -16,7 +16,9 @@ router.get('/notes', (req, res, next) => {
 
   notes.filter(searchTerm)
     .then(list => {
-      res.json(list);
+      if(list){
+        res.json(list);
+      }
     })
     .catch(err => next(err));
 });
