@@ -42,7 +42,7 @@ describe('Express static', function(){
   it('GET notes should return an array of 10 notes as an array', function(){
     return chai
       .request(app)
-      .get('/api/notes')
+      .get('/api/notes/')
       .then(res => {
         console.log(res.body);
         expect(res).to.exist;

@@ -12,6 +12,20 @@ const notes = simDB.initialize(data); // <<== and this
 
 router.get('/', (req, res, next)=>{
   const {searchTerm} = req.query;
+/*
+  notes.filter(searchTerm)
+    .then(list =>{
+      if(list){
+        console.log(res.json(list));
+        return res.json(list);
+      } else{
+        next();
+      }
+    })
+    .catch(err => {
+      next(err);
+    });
+  */
   
   notes.filter(searchTerm, (err, list)=>{
     if(err){
@@ -19,6 +33,7 @@ router.get('/', (req, res, next)=>{
     }
     res.json(list);       //responds with filtered array
   });
+  
 });
 
 router.get('/:id', (req, res, next)=>{

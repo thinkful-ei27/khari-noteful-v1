@@ -6,7 +6,6 @@ console.log('Hello Noteful!');
 
 // INSERT EXPRESS APP CODE HERE...
 const express = require('express');
-
 const data = require('./db/notes');
 
 // Simple In-Memory Database
@@ -15,7 +14,7 @@ const notes = simDB.initialize(data); // <<== and this
 
 const {PORT} = require('./config');
 const morgan = require('morgan');
-const notesRouter = require('./routes/notes.router');
+const notesRouter = require('./router/notes.router');
 const app = express();
 
 
