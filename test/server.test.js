@@ -44,7 +44,6 @@ describe('Express static', function(){
       .request(app)
       .get('/api/notes/')
       .then(res => {
-        console.log(res.body);
         expect(res).to.exist;
         expect(res).to.have.status(200);
         expect(res.body).to.be.a('array');
